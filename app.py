@@ -54,7 +54,7 @@ async def on_message(message):
                         if message.author != lunarflu:
                             return
                     dm_unwanted = await lunarflu.send(f" {lunarflu.mention} [experimental] SUSPICIOUS MESSAGE: {message_link} | {message.author}: {message.content}")
-                    dm_unwanted = await cakiki.send(f" {lunarflu.mention} [experimental] SUSPICIOUS MESSAGE: {message_link} | {message.author}: {message.content}")
+                    dm_unwanted = await cakiki.send(f" {cakiki.mention} [experimental] SUSPICIOUS MESSAGE: {message_link} | {message.author}: {message.content}")
             except Exception as e:
                 print(f"Antispam->Detecting certain unwanted strings Error: {e}")
 
