@@ -36,16 +36,26 @@ async def on_message(message):
     try:  
         global number_of_messages
         if message.author != bot.user:
-            user = bot.get_user(811235357663297546) #811235357663297546
+            lunarflu = bot.get_user(811235357663297546) #811235357663297546
+            
+            """Backup"""
             number_of_messages = number_of_messages + 1
             message_link = f"[#{message.channel.name}]({message.jump_url})"
-            dm_message = await user.send(f"{number_of_messages}| {message_link} |{message.author}: {message.content}")
+            dm_message = await lunarflu.send(f"{number_of_messages}| {message_link} |{message.author}: {message.content}")
 
+            """Antispam"""
+            #Detecting certain unwanted strings
+            try:
+                forbidden_strings = ["@everyone", "@here", "discord.gg", "discord.com/invite", "discord.com", "discord-premium"]
+                if any(string.lower() in message.content.lower() for string in forbidden_strings):
+                    ignored_role_ids = [897381378172264449, 897376942817419265] #admins, huggingfolks
+                    if any(role.id in ignored_role_ids for role in message.author.roles):
+                        return
+                    dm_unwanted = await lunarflu.send(f"FORBIDDEN STRING: {message_link} |{message.author}: {message.content}")
+            except Exception as e:
+                print(f"Antispam->Detecting certain unwanted strings Error: {e}")
 
-
-
-            
-            ### antispam experiment
+            #Posting too fast
             cooldown_duration = 3  # messages per n seconds, was 1, now 3, could try 5
             if message.author.id not in user_cooldowns:
                 user_cooldowns[message.author.id] = {'count': 1, 'timestamp': message.created_at}
@@ -89,11 +99,6 @@ async def on_message(message):
                     """    
             user_cooldowns[message.author.id]['timestamp'] = message.created_at  
 
-
-            
-            
-    
-        # Allow other event handlers to process the message
         await bot.process_commands(message)
 
     except Exception as e:
