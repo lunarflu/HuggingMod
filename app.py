@@ -50,8 +50,9 @@ async def on_message(message):
                 if any(string.lower() in message.content.lower() for string in forbidden_strings):
                     ignored_role_ids = [897381378172264449, 897376942817419265] #admins, huggingfolks
                     if any(role.id in ignored_role_ids for role in message.author.roles):
-                        return
-                    dm_unwanted = await lunarflu.send(f"FORBIDDEN STRING: {message_link} |{message.author}: {message.content}")
+                        if message.author != lunarflu:
+                            return
+                    dm_unwanted = await lunarflu.send(f" {lunarflu.mention} FORBIDDEN STRING: {message_link} |{message.author}: {message.content}")
             except Exception as e:
                 print(f"Antispam->Detecting certain unwanted strings Error: {e}")
 
