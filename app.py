@@ -37,6 +37,7 @@ async def on_message(message):
         global number_of_messages
         if message.author != bot.user:
             lunarflu = bot.get_user(811235357663297546) #811235357663297546
+            cakiki = bot.get_user(416019758492680203)
             
             """Backup"""
             number_of_messages = number_of_messages + 1
@@ -52,7 +53,8 @@ async def on_message(message):
                     if any(role.id in ignored_role_ids for role in message.author.roles):
                         if message.author != lunarflu:
                             return
-                    dm_unwanted = await lunarflu.send(f" {lunarflu.mention} FORBIDDEN STRING: {message_link} |{message.author}: {message.content}")
+                    dm_unwanted = await lunarflu.send(f" {lunarflu.mention} [experimental] SUSPICIOUS MESSAGE: {message_link} | {message.author}: {message.content}")
+                    dm_unwanted = await cakiki.send(f" {lunarflu.mention} [experimental] SUSPICIOUS MESSAGE: {message_link} | {message.author}: {message.content}")
             except Exception as e:
                 print(f"Antispam->Detecting certain unwanted strings Error: {e}")
 
