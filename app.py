@@ -94,6 +94,12 @@ async def on_message(message):
                             f"[Jump to message!](https://discord.com/channels/{message.guild.id}/{message.channel.id}/{message.id})\n"
                             f"{alert}"
                         )
+                        await cakiki.send(
+                            f"[EXPERIMENTAL ALERT] {message.author} may be posting too quickly! \n"
+                            f"Spam count: {user_cooldowns[message.author.id]['count']}\n"
+                            f"Message content: {message.content}\n"
+                            f"[Jump to message!](https://discord.com/channels/{message.guild.id}/{message.channel.id}/{message.id})\n"
+                        )
                     """
                     if user_cooldowns[message.author.id]['count']/5 > cooldown_duration:
                         # ping admins
