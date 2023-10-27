@@ -74,7 +74,7 @@ async def on_message(message):
                     user_cooldowns[message.author.id]['count'] += 1
 
                     # tldr; if we post 2 messages with less than 1s between them
-                    if user_cooldowns[message.author.id]['count'] > 2: # 3 in a row
+                    if user_cooldowns[message.author.id]['count'] > 3: # 4 in a row, helps avoid false positives for posting in threads
                         var1 = message.created_at
                         var2 = user_cooldowns[message.author.id]['timestamp']
                         print(f"seconds since last message by {message.author}: {(var1 - var2).total_seconds()}")   
