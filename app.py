@@ -24,7 +24,7 @@ def convert_to_timezone(dt, tz):
 DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN", None)
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
-test = Client("https://lunarflu-bert-test.hf.space/--replicas/58fjw/")
+testclient = Client("https://lunarflu-bert-test.hf.space/--replicas/58fjw/")
 
 #rate_limiter = RateLimiter(max_calls=10, period=60)  # needs testing
 
@@ -39,16 +39,19 @@ async def on_message(message):
         if message.author != bot.user:
             lunarflu = bot.get_user(811235357663297546) #811235357663297546
             cakiki = bot.get_user(416019758492680203)
-            log_channel = bot.get_channel(1036960509586587689)
             
             """Backup"""
             number_of_messages = number_of_messages + 1
             message_link = f"[#{message.channel.name}]({message.jump_url})"
-            job = test.submit(message.content, api_name="/predict")
-            while not job.done():
-                await asyncio.sleep(0.2)
-            #await log_channel.send(   later, after testing
-            dm_message = await lunarflu.send(f"{number_of_messages}| {job.outputs()[0]['label']}| {message_link} |{message.author}: {message.content}")
+            try:
+                job = testclient.submit(message.content, api_name="/predict")
+                while not job.done():
+                    await asyncio.sleep(0.2)
+                if job.done():
+                    label = job.outputs()[0]['label'] 
+            except Exception as e:
+                print(f"on_message Error: {e}")                       
+            dm_message = await lunarflu.send(f"{number_of_messages}| {label} |{message_link} |{message.author}: {message.content}")
 
             """Antispam"""
             #Detecting certain unwanted strings
@@ -93,7 +96,7 @@ async def on_message(message):
                         if test_server == 'False':
                             alert = "<@&1108342563628404747>" # normal @alerts role
 
-                        await log_channel.send(
+                        await bot.log_channel.send(
                             f"[EXPERIMENTAL ALERT] {message.author} may be posting too quickly! \n"
                             f"Spam count: {user_cooldowns[message.author.id]['count']}\n"
                             f"Message content: {message.content}\n"
@@ -126,8 +129,7 @@ async def on_message_edit(before, after):
     try:
         if before.author == bot.user:
             return
-            
-        log_channel = bot.get_channel(1036960509586587689)
+    
         if before.content != after.content:
             embed = Embed(color=Color.orange())
             embed.set_author(name=f"{before.author}    ID: {before.author.id}", icon_url=before.author.avatar.url if before.author.avatar else bot.user.avatar.url)
@@ -144,7 +146,7 @@ async def on_message_edit(before, after):
                 embed.add_field(name="Attachments", value=attachment_urls, inline=False)
             #embed.set_footer(text=f"{datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
             embed.set_footer(text=f"{convert_to_timezone(datetime.utcnow(), zurich_tz)}")
-            await log_channel.send(embed=embed)
+            await bot.log_channel.send(embed=embed)
             
     except Exception as e:
         print(f"on_message_edit Error: {e}")        
@@ -154,8 +156,7 @@ async def on_message_delete(message):
     try:    
         if message.author == bot.user:
             return
-
-        log_channel = bot.get_channel(1036960509586587689)
+    
         embed = Embed(color=Color.red())
         embed.set_author(name=f"{message.author}    ID: {message.author.id}", icon_url=message.author.avatar.url if message.author.avatar else bot.user.avatar.url)
         embed.title = "Message Deleted"
@@ -171,7 +172,7 @@ async def on_message_delete(message):
             embed.add_field(name="Attachments", value=attachment_urls, inline=False)
         #embed.set_footer(text=f"{datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
         embed.set_footer(text=f"{convert_to_timezone(datetime.utcnow(), zurich_tz)}")
-        await log_channel.send(embed=embed)
+        await bot.log_channel.send(embed=embed)
         
     except Exception as e:
         print(f"on_message_delete Error: {e}")  
@@ -185,7 +186,6 @@ async def on_member_update(before, after):
         async for entry in before.guild.audit_logs(limit=5):
             print(f'{entry.user} did {entry.action} to {entry.target}')        
         """
-        log_channel = bot.get_channel(1036960509586587689)
         if before.nick != after.nick:
             embed = Embed(color=Color.orange())
             embed.set_author(name=f"{after}    ID: {after.id}", icon_url=after.avatar.url if after.avatar else bot.user.avatar.url)
@@ -194,7 +194,7 @@ async def on_member_update(before, after):
             embed.add_field(name="Old", value=before.nick, inline=True)
             embed.add_field(name="New", value=after.nick, inline=True)
             embed.set_footer(text=f"{convert_to_timezone(datetime.utcnow(), zurich_tz)}")
-            await log_channel.send(embed=embed)
+            await bot.log_channel.send(embed=embed)
             
     except Exception as e:
         print(f"on_member_update Error: {e}")     
@@ -203,7 +203,6 @@ async def on_member_update(before, after):
 @bot.event
 async def on_member_ban(guild, banned_user):
     try:
-        log_channel = bot.get_channel(1036960509586587689)
         await asyncio.sleep(1)
         entry1 = await guild.fetch_ban(banned_user)
         ban_reason = entry1.reason
@@ -230,7 +229,7 @@ async def on_member_ban(guild, banned_user):
 
             #user = bot.get_user(811235357663297546)
             #dm_message = await user.send(content=content, embed=embed)
-            await log_channel.send(content=content, embed=embed)  
+            await bot.log_channel.send(content=content, embed=embed)  
 
     except Exception as e:
         print(f"on_member_ban Error: {e}")     
@@ -239,7 +238,7 @@ async def on_member_ban(guild, banned_user):
 @bot.event
 async def on_member_unban(guild, unbanned_user):
     try:
-        log_channel = bot.get_channel(1036960509586587689)
+        await asyncio.sleep(5)
         async for entry in guild.audit_logs(action=discord.AuditLogAction.unban, limit=1):
             if unbanned_user == entry.target: # verify that unbanned user is in audit log
                 moderator = entry.user    
@@ -257,7 +256,7 @@ async def on_member_unban(guild, unbanned_user):
                 
                 #user = bot.get_user(811235357663297546)
                 #dm_message = await user.send(content=content, embed=embed)
-                await log_channel.send(content=content, embed=embed)   
+                await bot.log_channel.send(content=content, embed=embed)   
               
     except Exception as e:
         print(f"on_member_unban Error: {e}")  
@@ -268,7 +267,7 @@ async def on_member_unban(guild, unbanned_user):
 @bot.event
 async def on_member_join(member):
     try:
-        log_channel = bot.get_channel(1036960509586587689)
+        await asyncio.sleep(5)
         embed = Embed(color=Color.blue())
         avatar_url = member.avatar.url if member.avatar else bot.user.avatar.url
         embed.set_author(name=f"{member}    ID: {member.id}", icon_url=avatar_url)
@@ -277,7 +276,7 @@ async def on_member_join(member):
         embed.add_field(name="Nickname", value=member.nick, inline=True)
         embed.add_field(name="Account Created At", value=member.created_at, inline=True)
         embed.set_footer(text=f"{convert_to_timezone(datetime.utcnow(), zurich_tz)}")
-        await log_channel.send(embed=embed)  
+        await bot.log_channel.send(embed=embed)  
         
     except Exception as e:
         print(f"on_member_join Error: {e}")  
@@ -286,7 +285,6 @@ async def on_member_join(member):
 @bot.event
 async def on_member_remove(member):
     try:
-        log_channel = bot.get_channel(1036960509586587689)
         embed = Embed(color=Color.blue())
         embed.set_author(name=f"{member}    ID: {member.id}", icon_url=member.avatar.url if member.avatar else bot.user.avatar.url)
         embed.title = "User Left"
@@ -294,7 +292,7 @@ async def on_member_remove(member):
         embed.add_field(name="Nickname", value=member.nick, inline=True)
         embed.add_field(name="Account Created At", value=member.created_at, inline=True)
         embed.set_footer(text=f"{convert_to_timezone(datetime.utcnow(), zurich_tz)}")
-        await log_channel.send(embed=embed)  
+        await bot.log_channel.send(embed=embed)  
         
     except Exception as e:
         print(f"on_member_remove Error: {e}")  
@@ -304,9 +302,8 @@ async def on_member_remove(member):
 async def on_guild_channel_create(channel):
     try:
         # creating channels
-        log_channel = bot.get_channel(1036960509586587689)
         embed = Embed(description=f'Channel {channel.mention} was created', color=Color.green())
-        await log_channel.send(embed=embed)
+        await bot.log_channel.send(embed=embed)
     except Exception as e:
         print(f"on_guild_channel_create Error: {e}")  
 
@@ -315,9 +312,8 @@ async def on_guild_channel_create(channel):
 async def on_guild_channel_delete(channel):
     try:
         # deleting channels, should ping @alerts for this
-        log_channel = bot.get_channel(1036960509586587689)
         embed = Embed(description=f'Channel {channel.name} ({channel.mention}) was deleted', color=Color.red())
-        await log_channel.send(embed=embed)
+        await bot.log_channel.send(embed=embed)
     except Exception as e:
         print(f"on_guild_channel_delete Error: {e}")  
 
@@ -326,9 +322,8 @@ async def on_guild_channel_delete(channel):
 async def on_guild_role_create(role):
     try:
         # creating roles
-        log_channel = bot.get_channel(1036960509586587689)
         embed = Embed(description=f'Role {role.mention} was created', color=Color.green())
-        await log_channel.send(embed=embed)
+        await bot.log_channel.send(embed=embed)
     except Exception as e:
         print(f"on_guild_role_create Error: {e}")  
 
@@ -337,9 +332,8 @@ async def on_guild_role_create(role):
 async def on_guild_role_delete(role):
     try:
         # deleting roles, should ping @alerts for this
-        log_channel = bot.get_channel(1036960509586587689)
         embed = Embed(description=f'Role {role.name} ({role.mention}) was deleted', color=Color.red())
-        await log_channel.send(embed=embed)
+        await bot.log_channel.send(embed=embed)
     except Exception as e:
         print(f"on_guild_role_delete Error: {e}")  
 
@@ -348,16 +342,15 @@ async def on_guild_role_delete(role):
 async def on_guild_role_update(before, after):
     try:
         # editing roles, could expand this 
-        log_channel = bot.get_channel(1036960509586587689)
         if before.name != after.name:
             embed = Embed(description=f'Role {before.mention} was renamed to {after.name}', color=Color.orange())
-            await log_channel.send(embed=embed)
+            await bot.log_channel.send(embed=embed)
     
         if before.permissions.administrator != after.permissions.administrator:
             # changes involving the administrator permission / sensitive permissions (can help to prevent mistakes)
             content = "<@&1108342563628404747>" # @alerts role
             embed = Embed(description=f'Role {after.mention} had its administrator permission {"enabled" if after.permissions.administrator else "disabled"}', color=Color.red())
-            await log_channel.send(content=content, embed=embed)  
+            await bot.log_channel.send(content=content, embed=embed)  
     except Exception as e:
         print(f"on_guild_role_update Error: {e}")  
 
@@ -365,16 +358,15 @@ async def on_guild_role_update(before, after):
 @bot.event
 async def on_voice_state_update(member, before, after):
     try:
-        log_channel = bot.get_channel(1036960509586587689)
         if before.mute != after.mute:
             # muting members
             embed = Embed(description=f'{member} was {"muted" if after.mute else "unmuted"} in voice chat', color=Color.orange())
-            await log_channel.send(embed=embed)
+            await bot.log_channel.send(embed=embed)
     
         if before.deaf != after.deaf:
             # deafening members
             embed = Embed(description=f'{member} was {"deafened" if after.deaf else "undeafened"} in voice chat', color=Color.orange())
-            await log_channel.send(embed=embed)
+            await bot.log_channel.send(embed=embed)
     except Exception as e:
         print(f"on_voice_state_update Error: {e}")  
 
@@ -396,12 +388,12 @@ async def check_github():
 
 @bot.event
 async def on_ready():
-    await asyncio.sleep(3)
+    await asyncio.sleep(5)
     print('Logged on as', bot.user)
-    await asyncio.sleep(3)
-    log_channel = bot.get_channel(1036960509586587689)
-    print(f"log channel on_ready: {log_channel}")
-
+    await asyncio.sleep(5)
+    bot.log_channel = bot.get_channel(1036960509586587689) # admin-logs
+    await asyncio.sleep(5)
+    print(bot.log_channel)
 
         
 def run_bot():
