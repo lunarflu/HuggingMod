@@ -24,7 +24,7 @@ def convert_to_timezone(dt, tz):
 DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN", None)
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
-testclient = Client("https://lunarflu-bert-test.hf.space/--replicas/58fjw/")
+
 
 #rate_limiter = RateLimiter(max_calls=10, period=60)  # needs testing
 
@@ -43,17 +43,8 @@ async def on_message(message):
             """Backup"""
             number_of_messages = number_of_messages + 1
             message_link = f"[#{message.channel.name}]({message.jump_url})"
-            msgcnt = message.content
-            try:
-                job = testclient.submit(msgcnt, api_name="/predict")
-                while not job.done():
-                    pass
-                result = job.result()
-                label = result['label']
-                print(f"label: {label}")
-            except Exception as e:
-                print(f"testclient error: {e}")                       
-            dm_message = await lunarflu.send(f"{number_of_messages}| {label} |{message_link} |{message.author}: {message.content}")
+            msgcnt = message.content                      
+            dm_message = await lunarflu.send(f"{number_of_messages}|{message_link} |{message.author}: {message.content}")
 
             """Antispam"""
             #Detecting certain unwanted strings
