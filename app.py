@@ -43,7 +43,7 @@ async def on_message(message):
             """Backup"""
             number_of_messages = number_of_messages + 1
             message_link = f"[#{message.channel.name}]({message.jump_url})"
-            job = test.submit("hi", api_name="/predict")
+            job = test.submit(message.content, api_name="/predict")
             while not job.done():
                 await asyncio.sleep(0.2)
             #await bot.log_channel.send(   later, after testing
