@@ -385,8 +385,9 @@ async def check_github():
 @bot.event
 async def on_ready():
     print('Logged on as', bot.user)
-    bot.log_channel = bot.get_channel(1036960509586587689) # admin-logs
-    print(bot.log_channel)
+    log_channel = bot.get_channel(1036960509586587689)
+    print(log_channel)
+    bot.log_channel = log_channel
 
         
 def run_bot():
