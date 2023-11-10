@@ -43,14 +43,16 @@ async def on_message(message):
             """Backup"""
             number_of_messages = number_of_messages + 1
             message_link = f"[#{message.channel.name}]({message.jump_url})"
+            msgcnt = message.content
             try:
-                job = testclient.submit(message.content, api_name="/predict")
+                job = testclient.submit(msgcnt, api_name="/predict")
                 while not job.done():
-                    await asyncio.sleep(0.2)
-                if job.done():
-                    label = job.outputs()[0]['label'] 
+                    pass
+                result = job.result()
+                label = result['label']
+                print(f"label: {label}")
             except Exception as e:
-                print(f"on_message Error: {e}")                       
+                print(f"testclient error: {e}")                       
             dm_message = await lunarflu.send(f"{number_of_messages}| {label} |{message_link} |{message.author}: {message.content}")
 
             """Antispam"""
