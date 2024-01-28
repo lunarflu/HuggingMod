@@ -83,7 +83,7 @@ async def on_message(message):
             cooldown_duration = 5  # messages per n seconds, was 1, now 3, could try 5
             false_positive_threshold = 5 # big = alert less (catch less spam), small = alert more (catch more spam)
             timeout_threshold = 10  # number of messages before issuing a timeout (similar function to ban, easier to reverse)
-            timeout_duration = 604800  # timeout duration in seconds (1 week)
+            timeout_duration = 168  # timeout duration in hours (1 week)
             
             if message.author.id not in user_cooldowns:
                 user_cooldowns[message.author.id] = {'count': 1, 'timestamp': message.created_at}
@@ -132,9 +132,9 @@ async def on_message(message):
 
                     # timeout for a week                    
                     if spam_count >= timeout_threshold:
-                        user = message.author
-                        await user.send("You have been temporarily timed out (7 Days) for spamming. If this was an error, message <@811235357663297546> or an `@admin`")
-                        await user.timeout(datetime.timedelta(seconds=timeout_duration), reason="Spamming")
+                        member = message.author
+                        await member.send("You have been temporarily timed out (7 Days) for spamming. If this was an error, message <@811235357663297546> or an `@admin`")
+                        await member.timeout(datetime.timedelta(hours=timeout_duration), reason="Spamming")
                         # reset spam count and timestamp
                         user_cooldowns[message.author.id] = {'count': 0, 'timestamp': message.created_at}  
                         print(f"{bot.user} timed out {message.author} for {timeout_duration} for Spam")   
