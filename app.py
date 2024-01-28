@@ -12,7 +12,7 @@ from discord.ext import commands
 from gradio_client import Client
 from PIL import Image
 from ratelimiter import RateLimiter
-from datetime import datetime # for times
+from datetime import datetime, timedelta # for times
 from pytz import timezone # for times
 import asyncio # check if used
 import logging
