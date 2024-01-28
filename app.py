@@ -15,6 +15,7 @@ from ratelimiter import RateLimiter
 from datetime import datetime # for times
 from pytz import timezone # for times
 import asyncio # check if used
+import logging
 
 zurich_tz = timezone("Europe/Zurich")
 
@@ -25,6 +26,8 @@ DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN", None)
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 #rate_limiter = RateLimiter(max_calls=10, period=60)  # needs testing
 
@@ -61,7 +64,27 @@ async def on_message(message):
                 print(f"Antispam->Detecting certain unwanted strings Error: {e}")
 
             #Posting too fast
-            cooldown_duration = 3  # messages per n seconds, was 1, now 3, could try 5
+            """
+            cooldown_duration determines the time window within which the bot tracks a user's posting behavior.
+            This is useful for detecting "staggered" instances of spam, where 20-50 messages are sent 2-10s apart, 
+            over timespans of typically a few minutes.
+
+            If a user hasn't posted anything for a duration longer than cooldown_duration, their record is cleared, 
+            and they start fresh if they post again.
+
+            If a user posts within the cooldown_duration, their activity count is updated, 
+            and their record persists until it exceeds the specified threshold or until the cooldown_duration window resets.
+
+            Increasing cooldown_duration = More robust at detecting "staggered" / "delayed" spam, but more false positives (fast chatters)
+
+            """
+        
+            # cooldown_duration = 3; false_positive_threshld = 3; -> 99% spam at spam_count of 10+ (could still be wrong, so we timeout)
+            cooldown_duration = 5  # messages per n seconds, was 1, now 3, could try 5
+            false_positive_threshold = 5 # big = alert less (catch less spam), small = alert more (catch more spam)
+            timeout_threshold = 10  # number of messages before issuing a timeout (similar function to ban, easier to reverse)
+            timeout_duration = 604800  # timeout duration in seconds (1 week)
+            
             if message.author.id not in user_cooldowns:
                 user_cooldowns[message.author.id] = {'count': 1, 'timestamp': message.created_at}
             else:
@@ -74,14 +97,18 @@ async def on_message(message):
                     user_cooldowns[message.author.id] = {'count': 1, 'timestamp': message.created_at}
                 else:
                     user_cooldowns[message.author.id]['count'] += 1
+                    spam_count = user_cooldowns[message.author.id]['count']
 
-                    # tldr; if we post 2 messages with less than 1s between them
-                    if user_cooldowns[message.author.id]['count'] > 3: # 4 in a row, helps avoid false positives for posting in threads
+                    # tldr; if we post 2 messages with less than [cooldown_duration]seconds between them
+                    if spam_count >= false_positive_threshold: # n in a row, helps avoid false positives for posting in threads
+                        # warning for 5+
+                        channel = message.channel
+                        await channel.send(f"{message.author.mention}, you may be posting too quickly! Please slow down a bit 🤗")
+                        
                         var1 = message.created_at
                         var2 = user_cooldowns[message.author.id]['timestamp']
                         print(f"seconds since last message by {message.author}: {(var1 - var2).total_seconds()}")   
-                        spam_count = user_cooldowns[message.author.id]['count']
-                        print(f"count: {user_cooldowns[message.author.id]['count']}")
+                        print(f"spam_count: {spam_count}")
 
                         test_server = os.environ.get('TEST_SERVER')
                         if test_server == 'True':
@@ -91,17 +118,28 @@ async def on_message(message):
 
                         await bot.log_channel.send(
                             f"[EXPERIMENTAL ALERT] {message.author} may be posting too quickly! \n"
-                            f"Spam count: {user_cooldowns[message.author.id]['count']}\n"
+                            f"Spam count: {spam_count}\n"
                             f"Message content: {message.content}\n"
                             f"[Jump to message!](https://discord.com/channels/{message.guild.id}/{message.channel.id}/{message.id})\n"
                             f"{alert}"
                         )
                         await cakiki.send(
                             f"[EXPERIMENTAL ALERT] {message.author} may be posting too quickly! \n"
-                            f"Spam count: {user_cooldowns[message.author.id]['count']}\n"
+                            f"Spam count: {spam_count}\n"
                             f"Message content: {message.content}\n"
                             f"[Jump to message!](https://discord.com/channels/{message.guild.id}/{message.channel.id}/{message.id})\n"
                         )
+
+                    # timeout for a week                    
+                    if spam_count >= timeout_threshold:
+                        user = message.author
+                        await user.send("You have been temporarily timed out (7 Days) for spamming. If this was an error, message <@811235357663297546> or an `@admin`")
+                        await user.timeout(datetime.timedelta(seconds=timeout_duration), reason="Spamming")
+                        # reset spam count and timestamp
+                        user_cooldowns[message.author.id] = {'count': 0, 'timestamp': message.created_at}  
+                        print(f"{bot.user} timed out {message.author} for {timeout_duration} for Spam")   
+                        await bot.log_channel.send(f" {alert} {bot.user} timed out {message.author} for {timeout_duration} for Spam")
+
                     """
                     if user_cooldowns[message.author.id]['count']/5 > cooldown_duration:
                         # ping admins
@@ -261,6 +299,12 @@ async def on_member_unban(guild, unbanned_user):
 async def on_member_join(member):
     try:
         await asyncio.sleep(5)
+        # initialize lvl1 on join
+        guild = bot.get_guild(879548962464493619)
+        lvl1 = guild.get_role(1171861537699397733)
+        member2 = guild.get_member(member.id)        
+        await member2.add_roles(lvl1)
+        
         embed = Embed(color=Color.blue())
         avatar_url = member.avatar.url if member.avatar else bot.user.avatar.url
         embed.set_author(name=f"{member}    ID: {member.id}", icon_url=avatar_url)
